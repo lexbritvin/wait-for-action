@@ -1,0 +1,66 @@
+name: 'Wait for Condition'
+description: 'Wait for a file on disk, artifact, or job to finish with timeout'
+author: 'Your Name'
+
+inputs:
+  condition-type:
+    description: 'Type of condition to wait for: file, artifact, or job'
+    required: true
+  file-path:
+    description: 'Path to file to wait for (when condition-type is file)'
+    required: false
+  artifact-name:
+    description: 'Name of artifact to wait for (when condition-type is artifact)'
+    required: false
+  job-name:
+    description: |
+      Name, prefix, or regex pattern of job(s) to wait for completion (when condition-type is job).
+      
+      Matching modes:
+      1. Exact match: "deploy-prod" matches only "deploy-prod"
+      2. Prefix match: "test" matches "test", "test (node-16)", "test-ubuntu", "test_python"
+      3. Regex pattern: Wrap in forward slashes like "/pattern/"
+      
+      Examples:
+      - "test" → matches all jobs starting with "test"
+      - "build" → matches "build", "build (prod)", "build-deploy"
+      - "/test.*node/" → regex matching jobs like "test-with-node", "testing-node-16"
+      - "/build-\d+/" → regex matching "build-1", "build-42", etc.
+      - "/^(test|build)-/" → regex matching jobs starting with "test-" or "build-"
+    required: false
+  repository:
+    description: 'Repository to check (format: owner/repo, defaults to current repo)'
+    required: false
+    default: ${{ github.repository }}
+  run-id:
+    description: 'Run ID to check job status (defaults to current run)'
+    required: false
+    default: ${{ github.run_id }}
+  timeout-minutes:
+    description: 'Timeout in minutes'
+    required: false
+    default: '30'
+  poll-interval-seconds:
+    description: 'Polling interval in seconds'
+    required: false
+    default: '10'
+  github-token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  result:
+    description: 'Result of the wait operation: success, timeout, or error'
+  message:
+    description: |
+      Descriptive message about the result.
+      For job conditions, includes details about all matching jobs and their status.
+      Examples:
+      - "All 3 job(s) completed successfully: test (node-16), test (node-18), test (node-20)"
+      - "2/3 job(s) not completed: build (windows) (in_progress), build (macos) (queued)"
+      - "No jobs found matching: 'deploy'. Available jobs: test, build, lint"
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
