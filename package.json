@@ -4,7 +4,7 @@
   "description": "GitHub Action that waits for file, artifact, or job completion",
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/main.js -o dist --license licenses.txt"
+    "build": "ncc build src/index.js -o dist --license licenses.txt"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
