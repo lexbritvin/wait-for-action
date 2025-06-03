@@ -29943,7 +29943,7 @@ async function run() {
       jobName: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("job-name"),
       repository: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("repository"),
       runId: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("run-id"),
-      timeoutMinutes: parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("timeout-minutes")),
+      timeoutSeconds: parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("timeout-seconds")),
       pollIntervalSeconds: parseInt(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("poll-interval-seconds")),
       githubToken: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("github-token"),
     };
@@ -29951,9 +29951,9 @@ async function run() {
     validateConfig(config);
 
     const startTime = Date.now();
-    const timeoutMs = config.timeoutMinutes * 60 * 1000;
+    const timeoutMs = config.timeoutSeconds * 1000;
 
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Starting wait for ${config.conditionType} with timeout of ${config.timeoutMinutes} minutes`);
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Starting wait for ${config.conditionType} with timeout of ${config.timeoutSeconds} seconds`);
 
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit(config.githubToken);
     const [owner, repo] = config.repository.split("/");
@@ -29973,7 +29973,7 @@ async function run() {
     }
 
     // Timeout reached
-    const timeoutMessage = `Timeout reached after ${config.timeoutMinutes} minutes`;
+    const timeoutMessage = `Timeout reached after ${config.timeoutSeconds} seconds`;
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("result", "timeout");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("message", timeoutMessage);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(timeoutMessage);
@@ -30080,7 +30080,7 @@ async function checkJobCondition(config, octokit, owner, repo) {
     } else {
       // Prefix-based matching (safer default)
       const escapedName = escapeRegex(targetPattern);
-      const regex = new RegExp(`^${escapedName}(?:[\\s\\-_\\(]|$)`, 'i');
+      const regex = new RegExp(`^${escapedName}(?:[\\s\\-_(]|$)`, 'i');
       matchingJobs = jobs.jobs.filter(j => regex.test(j.name));
     }
 
@@ -30119,7 +30119,6 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
 
   // All completed - check conclusions
   const failedJobs = matchingJobs.filter(j => j.conclusion !== "success");
-  const successCount = matchingJobs.length - failedJobs.length;
 
   if (failedJobs.length > 0) {
     const failedDetails = failedJobs.map(j => `${j.name} (${j.conclusion})`).join(', ');
