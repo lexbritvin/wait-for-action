@@ -33,7 +33,14 @@ async function run() {
       if (result.met) {
         core.setOutput("result", "success");
         core.setOutput("message", result.message);
-        core.info(`✅ Condition met: ${result.message}`);
+        
+        // Check if the message indicates job failure
+        if (result.message.includes("failed:")) {
+          core.warning(`⚠️ Job(s) completed but failed: ${result.message}`);
+          core.setFailed(result.message);
+        } else {
+          core.info(`✅ Condition met: ${result.message}`);
+        }
         return;
       }
 
@@ -192,7 +199,7 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
   if (failedJobs.length > 0) {
     const failedDetails = failedJobs.map(j => `${j.name} (${j.conclusion})`).join(', ');
     return {
-      met: false, // Consider failed jobs as condition not met
+      met: true, // Consider failed jobs as condition met (job finished)
       message: `${failedJobs.length}/${matchingJobs.length} job(s) failed: ${failedDetails}`,
     };
   }

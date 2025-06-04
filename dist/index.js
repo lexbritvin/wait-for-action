@@ -29964,7 +29964,14 @@ async function run() {
       if (result.met) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("result", "success");
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("message", result.message);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`✅ Condition met: ${result.message}`);
+        
+        // Check if the message indicates job failure
+        if (result.message.includes("failed:")) {
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`⚠️ Job(s) completed but failed: ${result.message}`);
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(result.message);
+        } else {
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`✅ Condition met: ${result.message}`);
+        }
         return;
       }
 
@@ -30123,7 +30130,7 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
   if (failedJobs.length > 0) {
     const failedDetails = failedJobs.map(j => `${j.name} (${j.conclusion})`).join(', ');
     return {
-      met: false, // Consider failed jobs as condition not met
+      met: true, // Consider failed jobs as condition met (job finished)
       message: `${failedJobs.length}/${matchingJobs.length} job(s) failed: ${failedDetails}`,
     };
   }
