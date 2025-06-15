@@ -48,6 +48,10 @@ inputs:
     description: 'GitHub token for API access'
     required: false
     default: ${{ github.token }}
+  detached:
+    description: 'When true, runs the wait operation in post action phase'
+    required: false
+    default: 'false'
 
 outputs:
   result:
@@ -64,3 +68,5 @@ outputs:
 runs:
   using: 'node20'
   main: 'dist/index.js'
+  post: 'dist/index.js'
+  post-if: inputs.detached == 'true'

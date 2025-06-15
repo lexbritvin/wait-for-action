@@ -5,6 +5,19 @@ import * as path from "path";
 
 async function run() {
   try {
+    const isPostAction = process.env.GITHUB_ACTION_POST === "true";
+    const detached = core.getInput("detached").toLowerCase() === "true";
+
+    // Skip main execution if detached mode is enabled
+    if (!isPostAction && detached) {
+      return;
+    }
+
+    // Skip post execution if not in detached mode
+    if (isPostAction && !detached) {
+      return;
+    }
+
     const config = {
       conditionType: core.getInput("condition-type", { required: true }),
       filePath: core.getInput("file-path"),
@@ -22,7 +35,8 @@ async function run() {
     const startTime = Date.now();
     const timeoutMs = config.timeoutSeconds * 1000;
 
-    core.info(`Starting wait for ${config.conditionType} with timeout of ${config.timeoutSeconds} seconds`);
+    const phaseInfo = isPostAction ? "post action phase" : "main action phase";
+    core.info(`🕒 Starting wait for ${config.conditionType} in ${phaseInfo} with timeout of ${config.timeoutSeconds} seconds`);
 
     const octokit = github.getOctokit(config.githubToken);
     const [owner, repo] = config.repository.split("/");
@@ -33,7 +47,7 @@ async function run() {
       if (result.met) {
         core.setOutput("result", "success");
         core.setOutput("message", result.message);
-        
+
         // Check if the message indicates job failure
         if (result.message.includes("failed:")) {
           core.warning(`⚠️ Job(s) completed but failed: ${result.message}`);
@@ -148,15 +162,15 @@ async function checkJobCondition(config, octokit, owner, repo) {
     const targetPattern = config.jobName;
     let matchingJobs;
 
-    if (targetPattern.startsWith('/') && targetPattern.endsWith('/')) {
+    if (targetPattern.startsWith("/") && targetPattern.endsWith("/")) {
       // Regex pattern: "/test.*/" or "/build-\d+/"
       const regexStr = targetPattern.slice(1, -1); // Remove leading/trailing slashes
-      const regex = new RegExp(regexStr, 'i');
+      const regex = new RegExp(regexStr, "i");
       matchingJobs = jobs.jobs.filter(j => regex.test(j.name));
     } else {
       // Prefix-based matching (safer default)
       const escapedName = escapeRegex(targetPattern);
-      const regex = new RegExp(`^${escapedName}(?:[\\s\\-_(]|$)`, 'i');
+      const regex = new RegExp(`^${escapedName}(?:[\\s\\-_(]|$)`, "i");
       matchingJobs = jobs.jobs.filter(j => regex.test(j.name));
     }
 
@@ -170,12 +184,12 @@ async function checkJobCondition(config, octokit, owner, repo) {
 }
 
 function escapeRegex(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function processMatchingJobs(matchingJobs, targetName, allJobs) {
   if (matchingJobs.length === 0) {
-    const availableJobs = allJobs.map(j => j.name).join(', ');
+    const availableJobs = allJobs.map(j => j.name).join(", ");
     return {
       met: false,
       message: `No jobs found matching: "${targetName}". Available jobs: ${availableJobs}`,
@@ -186,7 +200,7 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
   const incompleteJobs = matchingJobs.filter(j => j.status !== "completed");
 
   if (incompleteJobs.length > 0) {
-    const runningJobs = incompleteJobs.map(j => `${j.name} (${j.status})`).join(', ');
+    const runningJobs = incompleteJobs.map(j => `${j.name} (${j.status})`).join(", ");
     return {
       met: false,
       message: `${incompleteJobs.length}/${matchingJobs.length} job(s) not completed: ${runningJobs}`,
@@ -197,7 +211,7 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
   const failedJobs = matchingJobs.filter(j => j.conclusion !== "success");
 
   if (failedJobs.length > 0) {
-    const failedDetails = failedJobs.map(j => `${j.name} (${j.conclusion})`).join(', ');
+    const failedDetails = failedJobs.map(j => `${j.name} (${j.conclusion})`).join(", ");
     return {
       met: true, // Consider failed jobs as condition met (job finished)
       message: `${failedJobs.length}/${matchingJobs.length} job(s) failed: ${failedDetails}`,
@@ -206,7 +220,7 @@ async function processMatchingJobs(matchingJobs, targetName, allJobs) {
 
   return {
     met: true,
-    message: `All ${matchingJobs.length} job(s) completed successfully: ${matchingJobs.map(j => j.name).join(', ')}`,
+    message: `All ${matchingJobs.length} job(s) completed successfully: ${matchingJobs.map(j => j.name).join(", ")}`,
   };
 }
 
