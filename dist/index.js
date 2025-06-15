@@ -29934,22 +29934,27 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-const IsPost = !!_actions_core__WEBPACK_IMPORTED_MODULE_0__.getState("isPost");
-
 async function run() {
   try {
     // Detect if we're in a post action by checking for saved state
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.saveState("isPost", "true");
+    const isPostAction = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getState("DETACHED_MODE") === "true";
     const detached = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("detached").toLowerCase() === "true";
 
-    // Skip main execution if detached mode is enabled
-    if (!IsPost && detached) {
-      return;
-    }
-
-    // Skip post execution if not in detached mode
-    if (IsPost && !detached) {
-      return;
+    // In main action phase
+    if (!isPostAction) {
+      if (detached) {
+        // Save state for post action and skip main execution
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.saveState("DETACHED_MODE", "true");
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info("🔄 Detached mode enabled - wait operation will run in post action phase");
+        return;
+      }
+      // Continue with normal execution for non-detached mode
+    } else {
+      // In post action phase - only proceed if we saved the detached state
+      if (!detached) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info("ℹ️ Post action phase - skipping (detached mode not enabled)");
+        return;
+      }
     }
 
     const config = {
@@ -29969,7 +29974,8 @@ async function run() {
     const startTime = Date.now();
     const timeoutMs = config.timeoutSeconds * 1000;
 
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`🕒 Starting wait for ${config.conditionType} with timeout of ${config.timeoutSeconds} seconds`);
+    const phaseInfo = isPostAction ? "post action phase" : "main action phase";
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`🕒 Starting wait for ${config.conditionType} in ${phaseInfo} with timeout of ${config.timeoutSeconds} seconds`);
 
     const octokit = _actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit(config.githubToken);
     const [owner, repo] = config.repository.split("/");
@@ -30162,7 +30168,6 @@ function sleep(ms) {
 }
 
 await run();
-
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
 

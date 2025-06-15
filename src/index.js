@@ -3,22 +3,27 @@ import * as github from "@actions/github";
 import * as fs from "fs";
 import * as path from "path";
 
-const IsPost = !!core.getState("isPost");
-
 async function run() {
   try {
     // Detect if we're in a post action by checking for saved state
-    core.saveState("isPost", "true");
+    const isPostAction = core.getState("DETACHED_MODE") === "true";
     const detached = core.getInput("detached").toLowerCase() === "true";
 
-    // Skip main execution if detached mode is enabled
-    if (!IsPost && detached) {
-      return;
-    }
-
-    // Skip post execution if not in detached mode
-    if (IsPost && !detached) {
-      return;
+    // In main action phase
+    if (!isPostAction) {
+      if (detached) {
+        // Save state for post action and skip main execution
+        core.saveState("DETACHED_MODE", "true");
+        core.info("🔄 Detached mode enabled - wait operation will run in post action phase");
+        return;
+      }
+      // Continue with normal execution for non-detached mode
+    } else {
+      // In post action phase - only proceed if we saved the detached state
+      if (!detached) {
+        core.info("ℹ️ Post action phase - skipping (detached mode not enabled)");
+        return;
+      }
     }
 
     const config = {
@@ -38,7 +43,8 @@ async function run() {
     const startTime = Date.now();
     const timeoutMs = config.timeoutSeconds * 1000;
 
-    core.info(`🕒 Starting wait for ${config.conditionType} with timeout of ${config.timeoutSeconds} seconds`);
+    const phaseInfo = isPostAction ? "post action phase" : "main action phase";
+    core.info(`🕒 Starting wait for ${config.conditionType} in ${phaseInfo} with timeout of ${config.timeoutSeconds} seconds`);
 
     const octokit = github.getOctokit(config.githubToken);
     const [owner, repo] = config.repository.split("/");
