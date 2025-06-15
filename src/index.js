@@ -3,18 +3,21 @@ import * as github from "@actions/github";
 import * as fs from "fs";
 import * as path from "path";
 
+const IsPost = !!core.getState("isPost");
+
 async function run() {
   try {
-    const isPostAction = process.env.GITHUB_ACTION_POST === "true";
+    // Detect if we're in a post action by checking for saved state
+    core.saveState("isPost", "true");
     const detached = core.getInput("detached").toLowerCase() === "true";
 
     // Skip main execution if detached mode is enabled
-    if (!isPostAction && detached) {
+    if (!IsPost && detached) {
       return;
     }
 
     // Skip post execution if not in detached mode
-    if (isPostAction && !detached) {
+    if (IsPost && !detached) {
       return;
     }
 
@@ -35,8 +38,7 @@ async function run() {
     const startTime = Date.now();
     const timeoutMs = config.timeoutSeconds * 1000;
 
-    const phaseInfo = isPostAction ? "post action phase" : "main action phase";
-    core.info(`🕒 Starting wait for ${config.conditionType} in ${phaseInfo} with timeout of ${config.timeoutSeconds} seconds`);
+    core.info(`🕒 Starting wait for ${config.conditionType} with timeout of ${config.timeoutSeconds} seconds`);
 
     const octokit = github.getOctokit(config.githubToken);
     const [owner, repo] = config.repository.split("/");
