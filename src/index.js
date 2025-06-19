@@ -6,14 +6,14 @@ import * as path from "path";
 async function run() {
   try {
     // Detect if we're in a post action by checking for saved state
-    const isPostAction = core.getState("DETACHED_MODE") === "true";
+    const isPostAction = core.getState("IS_POST") === "true";
     const detached = core.getInput("detached").toLowerCase() === "true";
 
     // In main action phase
     if (!isPostAction) {
+      // Save state for post action and skip main execution
+      core.saveState("IS_POST", "true");
       if (detached) {
-        // Save state for post action and skip main execution
-        core.saveState("DETACHED_MODE", "true");
         core.info("🔄 Detached mode enabled - wait operation will run in post action phase");
         return;
       }

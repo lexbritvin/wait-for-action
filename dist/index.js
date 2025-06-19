@@ -29937,14 +29937,14 @@ __nccwpck_require__.r(__webpack_exports__);
 async function run() {
   try {
     // Detect if we're in a post action by checking for saved state
-    const isPostAction = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getState("DETACHED_MODE") === "true";
+    const isPostAction = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getState("IS_POST") === "true";
     const detached = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("detached").toLowerCase() === "true";
 
     // In main action phase
     if (!isPostAction) {
+      // Save state for post action and skip main execution
+      _actions_core__WEBPACK_IMPORTED_MODULE_0__.saveState("IS_POST", "true");
       if (detached) {
-        // Save state for post action and skip main execution
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.saveState("DETACHED_MODE", "true");
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info("🔄 Detached mode enabled - wait operation will run in post action phase");
         return;
       }
